@@ -43,4 +43,9 @@ static inline uint32_t wyhash32(const char *str)
     return _wymum32(a ^ b, (uint32_t)len ^ 0x27d4eb2fu);
 }
 
+static inline uint32_t hash_u32(uint32_t x)
+{
+    return x * 0x9e3779b9u;
+}
+
 #endif

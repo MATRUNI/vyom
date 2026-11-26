@@ -2,6 +2,7 @@
 #include "registry.h"
 #include "platform.h"
 #include "fs.h"
+#include "process.h"
 #include "tray.h"
 #include "window.h"
 #include "native_path.h"
@@ -53,6 +54,9 @@
 #define HASH_TRAY_SET_TOOLTIP        0x9dff0604u // wyhash32("vyom:tray:set_tooltip")
 #define HASH_TRAY_SET_MENU           0x1f827d68u // wyhash32("vyom:tray:set_menu")
 #define HASH_TRAY_DESTROY            0xceaf0e8cu // wyhash32("vyom:tray:destroy")
+#define HASH_PROCESS_EXEC          0x17d40edbu // wyhash32("vyom:process:exec")
+#define HASH_PROCESS_SPAWN         0x5bc6abecu // wyhash32("vyom:process:spawn")
+#define HASH_PROCESS_KILL          0x00995c6au // wyhash32("vyom:process:kill")
 typedef struct {
     char name[32];
     uint32_t hash;
@@ -203,6 +207,9 @@ app_command_fn lookup_command(const char *name)
         case HASH_TRAY_SET_TOOLTIP:      return (app_command_fn)handle_tray_set_tooltip;
         case HASH_TRAY_SET_MENU:         return (app_command_fn)handle_tray_set_menu;
         case HASH_TRAY_DESTROY:          return (app_command_fn)handle_tray_destroy;
+        case HASH_PROCESS_EXEC:          return (app_command_fn)handle_process_exec;
+        case HASH_PROCESS_SPAWN:         return (app_command_fn)handle_process_spawn;
+        case HASH_PROCESS_KILL:          return (app_command_fn)handle_process_kill;
         default:
         {
             // User commands (search 64-slot cmd_table)

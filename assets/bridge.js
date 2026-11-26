@@ -160,6 +160,28 @@ window.vyom = {
       return typeof res === "string" ? JSON.parse(res) : res;
     },
   },
+
+  process: {
+    exec: async (cmd, args = [], options = {}) => {
+      const res = await window.vyom.invoke("vyom:process:exec", {
+        cmd: String(cmd),
+        args: Array.isArray(args) ? args.map(String) : [],
+        timeout: options.timeout ? Number(options.timeout) : 5000,
+      });
+      return typeof res === "string" ? JSON.parse(res) : res;
+    },
+    spawn: async (cmd, args = []) => {
+      const res = await window.vyom.invoke("vyom:process:spawn", {
+        cmd: String(cmd),
+        args: Array.isArray(args) ? args.map(String) : [],
+      });
+      return typeof res === "string" ? JSON.parse(res) : res;
+    },
+    kill: async (pid) => {
+      const res = await window.vyom.invoke("vyom:process:kill", { pid: Number(pid) });
+      return typeof res === "string" ? JSON.parse(res) : res;
+    },
+  },
   
   // JavaScript -> C (Commands)
   invoke: function (cmd, args = {}) 

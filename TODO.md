@@ -175,6 +175,14 @@ This document tracks all completed milestones and outlines the comprehensive roa
 
 ---
 
+## ⚡ Performance & Optimization Backlog
+
+- [ ] **`json_util.c` (`find_json_value` + `memcpy`)**: Extract shared key-finder, replace `snprintf` + `strlen` with `memcpy`, and add fast-path unescaped `memcpy` in `json_get_string`.
+- [ ] **Raw Binary IPC (`ArrayBuffer` / `Uint8Array`)**: Bypass UTF-8 string conversion (`jsc_value_new_typed_array` / binary response) to push file/data transfers toward 2,000+ MB/s.
+- [ ] **Shared `JSON_ESC_LUT` Helper**: Reuse the 256-byte LUT + span `memcpy` across `clipboard.c` and `linux/process.c` (`emit_pipe_chunk`).
+
+---
+
 ## 📐 Architecture Rules & Coding Standards
 
 1. **Zero Unnecessary Mallocs on Hot Paths**: Hot switchboards and IPC replies must use stack buffers or `.bss` static buffers wherever sizes are bounded.
