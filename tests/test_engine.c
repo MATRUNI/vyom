@@ -172,14 +172,14 @@ TEST(test_process_exec_and_spawn_table) {
 
 TEST(test_fs_roundtrip) {
     ipc_reply_t r;
-    lookup_command("vyom:fs:write_text")("{\"path\":\"/tmp/vyom_unit_test.txt\",\"content\":\"abc123\"}", &r);
+    lookup_command("vyom:fs:write_text")("{\"path\":\"vyom_unit_test.txt\",\"content\":\"abc123\"}", &r);
     assert(!r.is_error);
 
-    lookup_command("vyom:fs:read_chunk")("{\"path\":\"/tmp/vyom_unit_test.txt\",\"offset\":0,\"length\":100}", &r);
+    lookup_command("vyom:fs:read_chunk")("{\"path\":\"vyom_unit_test.txt\",\"offset\":0,\"length\":100}", &r);
     assert(!r.is_error);
     assert(strstr(r.data, "len=6,total=6,eof=1\nabc123") != NULL);
 
-    lookup_command("vyom:fs:remove")("{\"path\":\"/tmp/vyom_unit_test.txt\"}", &r);
+    lookup_command("vyom:fs:remove")("{\"path\":\"vyom_unit_test.txt\"}", &r);
     assert(!r.is_error);
 }
 

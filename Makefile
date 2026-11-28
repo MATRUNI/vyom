@@ -11,6 +11,7 @@ ifeq ($(OS), Windows_NT)
     EXE := .exe
     PKG_CFLAGS :=
     PKG_LIBS := -luser32 -lgdi32 -lole32 -lshlwapi -lcomdlg32 -lshell32
+    TEST_FLAGS := -Wall -Wextra -g -O1 -std=c11
     MKDIR = mkdir -p $(1)
     RM = rm -rf $(1) 
     RUN_EMBED = ./$(BUILD_DIR)/embed$(EXE)
@@ -29,6 +30,7 @@ else
         PKG_CFLAGS :=
         PKG_LIBS := -framework Cocoa -framework WebKit
     endif
+    TEST_FLAGS := -Wall -Wextra -g -O1 -std=c11 -fsanitize=address,undefined
     MKDIR = mkdir -p $(1)
     RM = rm -rf $(1)
     RUN_EMBED = ./$(BUILD_DIR)/embed
@@ -91,10 +93,10 @@ debug: clean $(TARGET)
 release: CFLAGS += -s -Os -ffunction-sections -Wl,--gc-sections -fno-asynchronous-unwind-tables
 release: clean $(TARGET)
 
-# Unit tests for pure C11 engine (ASan + UBSan leak/bounds checking)
+# Unit tests for pure C11 engine (ASan + UBSan on Linux/macOS)
 test: $(BUILD_DIR)
-	@echo   [TEST]  Compiling engine suite with ASan + UBSan...
-	@$(CC) -Wall -Wextra -g -O1 -std=c11 -fsanitize=address,undefined -I$(INCLUDE_DIR) $(PKG_CFLAGS) tests/test_engine.c $(wildcard $(SRC_DIR)/engine/*.c) -o $(BUILD_DIR)/test_engine$(EXE)
+	@echo   [TEST]  Compiling engine suite...
+	@$(CC) $(TEST_FLAGS) -I$(INCLUDE_DIR) $(PKG_CFLAGS) tests/test_engine.c $(wildcard $(SRC_DIR)/engine/*.c) -o $(BUILD_DIR)/test_engine$(EXE)
 	@./$(BUILD_DIR)/test_engine$(EXE)
 
 clean:

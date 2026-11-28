@@ -43,6 +43,7 @@ jobs:
         run: |
           make clean
           make release
+          make test
 
       - name: Verify PE Executable
         shell: msys2 {0}
@@ -93,6 +94,7 @@ jobs:
           if [ -d "src/platform/linux" ]; then
             make clean
             make release
+            make test
           else
             echo "No Linux platform code found. Skipping."
           fi
@@ -138,6 +140,7 @@ jobs:
           if [ -d "src/platform/macos" ]; then
             make clean
             make
+            make test
           else
             echo "No macOS platform code on this branch. Skipping build."
           fi
