@@ -222,7 +222,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 {
     if (win32_tray_handle_message(hwnd, uMsg, wParam, lParam))
         return 0;
-
+    if (win32_process_handle_message(uMsg, wParam, lParam))
+        return 0;
     switch (uMsg)
     {
         case WM_DESTROY:

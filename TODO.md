@@ -16,7 +16,7 @@ This document tracks all completed milestones and outlines the comprehensive roa
 [ Native Clipboard Engine            ]   100% [====================] (writeText, readText, clear, hasText)
 [ macOS (Cocoa + WKWebView)          ]   100% [====================] (Complete & CI Verified)
 [ Native Notifications (Tray/Banners)]   100% [====================] (Complete & CI Verified)
-[ Process & Shell Execution          ]     0% [--------------------] (Planned)
+[ Process & Shell Execution          ]   100% [====================] (Complete & CI Verified)
 [ System Tray & Context Menus        ]   100% [====================] (Complete & CI Verified)
 ```
 
@@ -93,11 +93,12 @@ This document tracks all completed milestones and outlines the comprehensive roa
 ## Phase 3: System & Shell Integration (Medium Priority ⚡)
 
 ### 3.1 Subprocess & Shell Execution (`window.vyom.process`)
-- [ ] **`process.exec(command, args)`**: Execute shell command synchronously or asynchronously, returning `{ stdout, stderr, exitCode }`.
-  - **Win32**: `CreateProcessW` with anonymous pipes and timeout.
-  - **Linux**: `GSubprocess` / `g_subprocess_communicate_utf8`.
-- [ ] **`process.spawn(command, args)`**: Long-running background process streaming `stdout` and `stderr` events via `vyom.on()`.
-- [ ] **`process.kill(pid, signal)`**: Process termination.
+- [x] **`process.exec(command, args)`**: Execute command asynchronously with timeout, returning `{ stdout, stderr, exitCode, timedOut }`.
+  - **Win32**: `CreateProcessW` with anonymous pipes, Job Object, and timeout.
+  - **Linux**: `GSubprocess` async pump with `PR_SET_PDEATHSIG` + process groups.
+  - **macOS**: `NSTask` + `NSPipe` + `dispatch_semaphore`.
+- [x] **`process.spawn(command, args)`**: Long-running background process streaming `stdout`, `stderr`, and `exit` events via `vyom.on()`.
+- [x] **`process.kill(pid)`**: O(1) `hash_u32` owned-PID verification + process group termination.
 
 ### 3.2 Standard Paths & Environment (`window.vyom.path` / `os`)
 - [x] **`path.getSpecial(name)`**: Resolve OS-standard directories across Windows, Linux, and macOS:
@@ -172,6 +173,14 @@ This document tracks all completed milestones and outlines the comprehensive roa
 - [x] Wire macOS target flags and framework links in `Makefile` (`-framework Cocoa -framework WebKit`).
 - [x] Apple Silicon (ARM64) CI verification on GitHub Actions (`macos-latest`).
 - [ ] Implement `src/platform/android/` NDK JNI bridge (`libvyom.so`) & AssetLoader.
+
+---
+
+## ⚡ Performance & Optimization Backlog
+
+- [ ] **`json_util.c` (`json_extract` 1-Pass Scanner)**: Single-pass `json_field_t[]` descriptor extractor (eliminates repeated `strstr` scans, handles spaces before `:`, ignores keys inside string values), plus `memcpy` fast-path.
+- [ ] **Raw Binary IPC (`ArrayBuffer` / `Uint8Array`)**: Bypass UTF-8 string conversion (`jsc_value_new_typed_array` / binary response) to push file/data transfers toward 2,000+ MB/s.
+- [ ] **Shared `JSON_ESC_LUT` Helper**: Reuse the 256-byte LUT + span `memcpy` across `clipboard.c` and `linux/process.c` (`emit_pipe_chunk`).
 
 ---
 

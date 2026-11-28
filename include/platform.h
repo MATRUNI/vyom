@@ -67,4 +67,17 @@ void platform_tray_set_tooltip(const char *tooltip);
 void platform_tray_set_menu(const tray_menu_item_t *items, int count);
 void platform_tray_destroy(void);
 
+// 8. Native Subprocess Execution
+typedef struct {
+    int exit_code;
+    bool timed_out;
+    char *stdout_buf; // Caller frees
+    char *stderr_buf; // Caller frees
+} process_result_t;
+
+bool platform_process_exec(const char *cmd, const char *const *argv, int timeout_ms, process_result_t *out);
+int  platform_process_spawn(const char *cmd, const char *const *argv);
+bool platform_process_kill(int pid);
+void process_cleanup_all(void);
+
 #endif
