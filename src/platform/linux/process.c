@@ -4,25 +4,56 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/prctl.h>
+#include <unistd.h>
 
 typedef struct {
     GCancellable *cancel;
+    gboolean done;
     gboolean timed_out;
-} exec_timeout_ctx_t;
+    char *stdout_str;
+    char *stderr_str;
+} exec_ctx_t;
 
 static gboolean on_exec_timeout(gpointer user_data)
 {
-    exec_timeout_ctx_t *ctx = (exec_timeout_ctx_t *)user_data;
+    exec_ctx_t *ctx = (exec_ctx_t *)user_data;
     ctx->timed_out = TRUE;
     g_cancellable_cancel(ctx->cancel);
-    return G_SOURCE_REMOVE;
+    return G_SOURCE_REMOVE; // Auto-removes timer!
+}
+
+static void on_exec_finish(GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    exec_ctx_t *ctx = (exec_ctx_t *)user_data;
+    GError *err = NULL;
+    g_subprocess_communicate_utf8_finish(G_SUBPROCESS(source), res, &ctx->stdout_str, &ctx->stderr_str, &err);
+    if (err) g_error_free(err);
+    ctx->done = TRUE;
+}
+
+static void on_child_setup(gpointer user_data)
+{
+    (void)user_data;
+    // Kernel kills child immediately if parent Vyom process ever dies or crashes
+    prctl(PR_SET_PDEATHSIG, SIGKILL);
+    setpgid(0,0);
+}
+
+static GSubprocess* launch_child(const char *const *argv, GError **err)
+{
+    GSubprocessLauncher *launcher = g_subprocess_launcher_new(G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE);
+    g_subprocess_launcher_set_child_setup(launcher, on_child_setup, NULL, NULL);
+    GSubprocess *proc = g_subprocess_launcher_spawnv(launcher, argv, err);
+    g_object_unref(launcher);
+    return proc;
 }
 
 bool platform_process_exec(const char *cmd, const char *const *argv, int timeout_ms, process_result_t *out)
 {
     (void)cmd;
     GError *err = NULL;
-    GSubprocess *proc = g_subprocess_newv(argv,G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE,&err);
+    GSubprocess *proc = launch_child(argv, &err);
 
     if (!proc)
     {
@@ -30,26 +61,28 @@ bool platform_process_exec(const char *cmd, const char *const *argv, int timeout
         return false;
     }
 
-    exec_timeout_ctx_t tctx = { .cancel = g_cancellable_new(), .timed_out = FALSE };
-    guint timer_id = g_timeout_add((guint)timeout_ms, on_exec_timeout, &tctx);
+    exec_ctx_t ctx = { .cancel = g_cancellable_new(), .done = FALSE, .timed_out = FALSE, .stdout_str = NULL, .stderr_str = NULL };
+    guint timer_id = g_timeout_add((guint)timeout_ms, on_exec_timeout, &ctx);
 
-    char *stdout_str = NULL;
-    char *stderr_str = NULL;
-    g_subprocess_communicate_utf8(proc, NULL, tctx.cancel, &stdout_str, &stderr_str, &err);
+    g_subprocess_communicate_utf8_async(proc, NULL, ctx.cancel, on_exec_finish, &ctx);
+    while (!ctx.done)
+        g_main_context_iteration(NULL, TRUE);
 
-    g_source_remove(timer_id);
-    if (tctx.timed_out)
+    // Only remove timer if it didn't already fire & auto-remove itself
+    if (!ctx.timed_out)
+        g_source_remove(timer_id);
+    else
     {
         g_subprocess_force_exit(proc);
+        g_subprocess_wait(proc, NULL, NULL);
     }
-    if (err) g_error_free(err);
 
-    out->timed_out = tctx.timed_out ? true : false;
+    out->timed_out = ctx.timed_out ? true : false;
     out->exit_code = g_subprocess_get_if_exited(proc) ? g_subprocess_get_exit_status(proc) : -1;
-    out->stdout_buf = stdout_str;
-    out->stderr_buf = stderr_str;
+    out->stdout_buf = ctx.stdout_str;
+    out->stderr_buf = ctx.stderr_str;
 
-    g_object_unref(tctx.cancel);
+    g_object_unref(ctx.cancel);
     g_object_unref(proc);
     return true;
 }
@@ -118,7 +151,7 @@ int platform_process_spawn(const char *cmd, const char *const *argv)
 {
     (void)cmd;
     GError *err = NULL;
-    GSubprocess *proc = g_subprocess_newv(argv,G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_PIPE,&err);
+    GSubprocess *proc = launch_child(argv, &err);
 
     if (!proc)
     {
@@ -162,5 +195,5 @@ int platform_process_spawn(const char *cmd, const char *const *argv)
 bool platform_process_kill(int pid)
 {
     if (pid <= 0) return false;
-    return kill((pid_t)pid, SIGTERM) == 0;
+    return kill((pid_t)-pid, SIGTERM) == 0;
 }

@@ -177,7 +177,7 @@ This document tracks all completed milestones and outlines the comprehensive roa
 
 ## ⚡ Performance & Optimization Backlog
 
-- [ ] **`json_util.c` (`find_json_value` + `memcpy`)**: Extract shared key-finder, replace `snprintf` + `strlen` with `memcpy`, and add fast-path unescaped `memcpy` in `json_get_string`.
+- [ ] **`json_util.c` (`json_extract` 1-Pass Scanner)**: Single-pass `json_field_t[]` descriptor extractor (eliminates repeated `strstr` scans, handles spaces before `:`, ignores keys inside string values), plus `memcpy` fast-path.
 - [ ] **Raw Binary IPC (`ArrayBuffer` / `Uint8Array`)**: Bypass UTF-8 string conversion (`jsc_value_new_typed_array` / binary response) to push file/data transfers toward 2,000+ MB/s.
 - [ ] **Shared `JSON_ESC_LUT` Helper**: Reuse the 256-byte LUT + span `memcpy` across `clipboard.c` and `linux/process.c` (`emit_pipe_chunk`).
 

@@ -49,7 +49,7 @@ SRCS := $(COMMON_SRCS) $(PLATFORM_SRCS)
 OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(filter %.c, $(SRCS))) \
         $(patsubst $(SRC_DIR)/%.m, $(BUILD_DIR)/%.o, $(filter %.m, $(SRCS)))
 
-.PHONY: all run debug release clean
+.PHONY: all run debug release clean test
 
 all: $(TARGET)
 
@@ -90,6 +90,12 @@ debug: clean $(TARGET)
 # Release build: strips all debug symbols, unused functions, and exception tables
 release: CFLAGS += -s -Os -ffunction-sections -Wl,--gc-sections -fno-asynchronous-unwind-tables
 release: clean $(TARGET)
+
+# Unit tests for pure C11 engine (ASan + UBSan leak/bounds checking)
+test: $(BUILD_DIR)
+	@echo   [TEST]  Compiling engine suite with ASan + UBSan...
+	@$(CC) -Wall -Wextra -g -O1 -std=c11 -fsanitize=address,undefined -I$(INCLUDE_DIR) $(PKG_CFLAGS) tests/test_engine.c $(wildcard $(SRC_DIR)/engine/*.c) -o $(BUILD_DIR)/test_engine$(EXE)
+	@./$(BUILD_DIR)/test_engine$(EXE)
 
 clean:
 	@echo   [CLEAN] Removing $(BUILD_DIR)/

@@ -272,3 +272,16 @@ void handle_process_kill(const char *args, ipc_reply_t *reply)
     bool ok = platform_process_kill(pid);
     ipc_reply_send(reply, ok ? "{\"success\":true}" : "{\"success\":false}");
 }
+
+void process_cleanup_all(void)
+{
+    for(int i=0;i<PID_TABLE_SIZE;i++)
+    {
+        if(g_active_pids[i]>0)
+        {
+            platform_process_kill(g_active_pids[i]);
+            g_active_pids[i] = -1;
+        }
+    }
+    g_active_count = 0;
+}

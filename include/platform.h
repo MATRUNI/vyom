@@ -78,5 +78,6 @@ typedef struct {
 bool platform_process_exec(const char *cmd, const char *const *argv, int timeout_ms, process_result_t *out);
 int  platform_process_spawn(const char *cmd, const char *const *argv);
 bool platform_process_kill(int pid);
+void process_cleanup_all(void);
 
 #endif
